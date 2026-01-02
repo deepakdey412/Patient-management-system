@@ -3,6 +3,7 @@ package com.pm.auth_service.service;
 import com.pm.auth_service.dto.LoginDtoRequest;
 import com.pm.auth_service.model.Users;
 import com.pm.auth_service.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -11,13 +12,17 @@ import java.util.Optional;
 public class AuthService {
 
     private final UserRepository userRepository;
-    public AuthService(UserRepository userRepository) {
+    private final PasswordEncoder passwordEncoder;
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public Optional<String> authenticate(LoginDtoRequest loginDtoRequest) {
-        Optional<Users> foundUser = userRepository.findByEmail(loginDtoRequest.getEmail());
+        Optional<String> token = userRepository.findByEmail(loginDtoRequest.getEmail())
+                .filter(u-> passwordEncoder.matches(loginDtoRequest.getPassword(), u.getPassword()))
+                        .map(u-> jwtUtil.generateToken(u.getEmail() , u.getRole())));
 
-
+        return token;
     }
 }
